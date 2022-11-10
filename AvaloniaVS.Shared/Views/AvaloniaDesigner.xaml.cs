@@ -631,6 +631,9 @@ namespace AvaloniaVS.Views
 
         private async void ProcessExited(object sender, EventArgs e)
         {
+            if (View == AvaloniaDesignerView.Source)
+                return;
+
             if (!IsPaused)
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
