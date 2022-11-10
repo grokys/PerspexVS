@@ -15,7 +15,9 @@ using Avalonia.Ide.CompletionEngine.DnlibMetadataProvider;
 using AvaloniaVS.Models;
 using AvaloniaVS.Services;
 using EnvDTE;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Threading;
@@ -443,6 +445,9 @@ namespace AvaloniaVS.Views
             var executablePath = SelectedTarget?.ExecutableAssembly;
             var hostAppPath = SelectedTarget?.HostApp;
 
+            previewer.Visibility = Visibility.Visible;
+            buildMessage.Visibility = Visibility.Collapsed;
+
             if (assemblyPath != null && executablePath != null && hostAppPath != null)
             {
                 RebuildMetadata(assemblyPath, executablePath);
@@ -467,6 +472,9 @@ namespace AvaloniaVS.Views
                 {
                     ShowError("Build Required", ex.Message);
                     Log.Logger.Debug(ex, "StartAsync could not find executable");
+
+                    previewer.Visibility = Visibility.Hidden;
+                    buildMessage.Visibility = Visibility.Visible;
                 }
                 catch (Exception ex)
                 {
@@ -479,7 +487,7 @@ namespace AvaloniaVS.Views
                 }
             }
             else
-            {
+            { 
                 Log.Logger.Error("No executable found");
 
                 // This message is unfortunate but I can't work out how to tell when all references
@@ -487,9 +495,20 @@ namespace AvaloniaVS.Views
                 ShowError(
                     "No Executable",
                     "Reference the library from an executable or wait for the solution to finish loading.");
+
             }
 
             Log.Logger.Verbose("Finished AvaloniaDesigner.StartProcessAsync()");
+        }
+
+
+        private void OnBuildSolutionClick(object sender, RoutedEventArgs e)
+        {
+            var buildManager = ServiceProvider.GlobalProvider.GetService(typeof(SVsSolutionBuildManager)) as IVsSolutionBuildManager2;
+            if (ErrorHandler.Failed(buildManager.StartSimpleUpdateSolutionConfiguration((uint)(VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_FORCE_UPDATE | VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_BUILD), (uint)VSSOLNBUILDQUERYRESULTS.VSSBQR_OUTOFDATE_QUERY_YES, 0/*false*/)))
+            {
+                ShowError("Build Failed", "Failed to build solution.");
+            }
         }
 
         private void RebuildMetadata(string assemblyPath, string executablePath)
