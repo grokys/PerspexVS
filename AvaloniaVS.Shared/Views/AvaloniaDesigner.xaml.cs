@@ -227,7 +227,16 @@ namespace AvaloniaVS.Views
             LoadTargetsAndStartProcessAsync().FireAndForget();
             AvaloniaPackage.UpdateSolutionEvents.ActiveProjectConfigurationDidChange += (sender, vsh) => HandleConfigurationChangeAsync(sender, vsh).FireAndForget();
 
+            if (Path.GetFileName(_xamlPath).ToLower() == "app.axaml")
+                HandleAppXaml();
+
             Log.Logger.Verbose("Finished AvaloniaDesigner.Start()");
+        }
+
+        private void HandleAppXaml()
+        {
+            toolbar.Visibility = Visibility.Collapsed;
+            View = AvaloniaDesignerView.Source;
         }
 
         private async Task HandleConfigurationChangeAsync(object sender, Microsoft.VisualStudio.Shell.Interop.IVsHierarchy e)
